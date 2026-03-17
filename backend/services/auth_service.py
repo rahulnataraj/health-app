@@ -1,7 +1,7 @@
 import bcrypt
 import jwt
 from datetime import datetime, timedelta, timezone
-from db.appwrite_client import databases, DATABASE_ID
+from db.appwrite_client import tablesDB, DATABASE_ID
 from appwrite.id import ID
 from appwrite.query import Query
 from models.auth_model import UserSignup, UserLogin
@@ -14,9 +14,9 @@ USERS_COLLECTION = "users"
 def signup_user(user: UserSignup):
     try:
         # Check if user already exists by email
-        existing = databases.list_documents(
+        existing = tablesDB.list_rows(
             database_id=DATABASE_ID,
-            collection_id=USERS_COLLECTION,
+            table_id=USERS_COLLECTION,
             queries=[Query.equal("email", user.email)]
         )
         if existing["total"] > 0:
@@ -44,10 +44,10 @@ def signup_user(user: UserSignup):
             user_data["birthdate"] = user.birthdate.isoformat()
 
         # Store user document
-        result = databases.create_document(
+        result = tablesDB.create_row(
             database_id=DATABASE_ID,
-            collection_id=USERS_COLLECTION,
-            document_id=ID.unique(),
+            table_id=USERS_COLLECTION,
+            row_id=ID.unique(),
             data=user_data
         )
         logger.info(f"User registered: {user.email}")
@@ -66,16 +66,16 @@ def signup_user(user: UserSignup):
 def login_user(user: UserLogin):
     try:
         # Find user by email
-        result = databases.list_documents(
+        result = tablesDB.list_rows(
             database_id=DATABASE_ID,
-            collection_id=USERS_COLLECTION,
+            table_id=USERS_COLLECTION,
             queries=[Query.equal("email", user.email)]
         )
 
         if result["total"] == 0:
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-        user_doc = result["documents"][0]
+        user_doc = result["rows"][0]
 
         # Check if user is active
         if not user_doc.get("isActive", True):

@@ -1,5 +1,5 @@
 from appwrite.client import Client
-from appwrite.services.databases import Databases
+from appwrite.services.tables_db import TablesDB
 from config import settings
 from utils.logger import logger
 
@@ -9,7 +9,7 @@ try:
     client.set_project(settings.appwrite_project_id)
     client.set_key(settings.appwrite_api_key)
 
-    databases = Databases(client)
+    tablesDB = TablesDB(client)
     DATABASE_ID = settings.appwrite_database_id
 
     logger.info("Appwrite client initialized successfully.")

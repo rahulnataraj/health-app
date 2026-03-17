@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Security
 from fastapi.security import APIKeyHeader
 from models.auth_model import UserSignup, UserLogin
 from services.auth_service import signup_user, login_user
-from db.appwrite_client import databases, DATABASE_ID
+from db.appwrite_client import tablesDB, DATABASE_ID
 from appwrite.query import Query
 from config import settings
 from utils.logger import logger
@@ -58,13 +58,13 @@ def get_current_user(authorization: str = Security(auth_header)):
     # Look up linked patient by familyUserId
     patient_id = None
     try:
-        result = databases.list_documents(
+        result = tablesDB.list_rows(
             database_id=DATABASE_ID,
-            collection_id="patients",
+            table_id="patients",
             queries=[Query.equal("familyUserId", user_id)]
         )
         if result["total"] > 0:
-            patient_id = result["documents"][0]["$id"]
+            patient_id = result["rows"][0]["$id"]
     except Exception as e:
         logger.warning(f"Failed to look up patient for user {user_id}: {e}")
 

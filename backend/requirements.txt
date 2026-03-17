@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-appwrite
+appwrite==15.3.0
 pydantic[email]
 pydantic-settings
 bcrypt

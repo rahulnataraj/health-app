@@ -1,4 +1,4 @@
-from db.appwrite_client import databases, DATABASE_ID
+from db.appwrite_client import tablesDB, DATABASE_ID
 from appwrite.id import ID
 from appwrite.query import Query
 from models.vital_model import VitalCreate
@@ -34,10 +34,10 @@ class VitalPipeline:
             vital_record["recordedAt"] = vital.timestamp.isoformat()
             
         try:
-            databases.create_document(
+            tablesDB.create_row(
                 database_id=DATABASE_ID,
-                collection_id=VITALS_COLLECTION,
-                document_id=ID.unique(),
+                table_id=VITALS_COLLECTION,
+                row_id=ID.unique(),
                 data=vital_record
             )
             logger.info("Vital stored successfully.")
@@ -70,16 +70,16 @@ class VitalPipeline:
 
 def get_patient_vitals_history(patient_id: str, limit: int = 100):
     try:
-        response = databases.list_documents(
+        response = tablesDB.list_rows(
             database_id=DATABASE_ID,
-            collection_id=VITALS_COLLECTION,
+            table_id=VITALS_COLLECTION,
             queries=[
                 Query.equal("patientId", patient_id),
                 Query.order_desc("recordedAt"),
                 Query.limit(limit)
             ]
         )
-        return response["documents"]
+        return response["rows"]
     except Exception as e:
         logger.error(f"Failed to fetch vital history for {patient_id}: {e}")
         return []

@@ -2,7 +2,7 @@ import asyncio
 import uuid
 import bcrypt
 from datetime import datetime, timedelta, timezone
-from db.appwrite_client import databases, DATABASE_ID
+from db.appwrite_client import tablesDB, DATABASE_ID
 from appwrite.id import ID
 from utils.logger import logger
 
@@ -22,10 +22,10 @@ async def seed_database():
     try:
         logger.info(f"Creating test user: {test_email}")
         hashed_password = bcrypt.hashpw(test_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        result = databases.create_document(
+        result = tablesDB.create_row(
             database_id=DATABASE_ID,
-            collection_id=USERS_COLLECTION,
-            document_id=ID.unique(),
+            table_id=USERS_COLLECTION,
+            row_id=ID.unique(),
             data={
                 "username": "testpatient",
                 "email": test_email,
@@ -49,10 +49,10 @@ async def seed_database():
     # 2. Seed Patients
     logger.info("Seeding patients collection...")
     try:
-        databases.create_document(
+        tablesDB.create_row(
             database_id=DATABASE_ID,
-            collection_id=PATIENTS_COLLECTION,
-            document_id=patient_id,
+            table_id=PATIENTS_COLLECTION,
+            row_id=patient_id,
             data={
                 "name": "Jacob Jones",
                 "age": 45,
@@ -77,10 +77,10 @@ async def seed_database():
             status = "warning"
 
         try:
-            databases.create_document(
+            tablesDB.create_row(
                 database_id=DATABASE_ID,
-                collection_id=VITALS_COLLECTION,
-                document_id=ID.unique(),
+                table_id=VITALS_COLLECTION,
+                row_id=ID.unique(),
                 data={
                     "patientId": patient_id,
                     "pulseRate": pulse,
@@ -113,10 +113,10 @@ async def seed_database():
 
     for alert in alerts_data:
         try:
-            databases.create_document(
+            tablesDB.create_row(
                 database_id=DATABASE_ID,
-                collection_id=ALERTS_COLLECTION,
-                document_id=ID.unique(),
+                table_id=ALERTS_COLLECTION,
+                row_id=ID.unique(),
                 data=alert
             )
         except Exception as e:

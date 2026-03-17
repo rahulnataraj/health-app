@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from db.appwrite_client import databases, DATABASE_ID
+from db.appwrite_client import tablesDB, DATABASE_ID
 from services.vital_service import get_patient_vitals_history
 from utils.logger import logger
 
@@ -11,10 +11,10 @@ router = APIRouter(prefix="/api/v1/patients", tags=["Patients"])
 def get_patient_info(patient_id: str):
     """Fetch patient details by ID"""
     try:
-        response = databases.get_document(
+        response = tablesDB.get_row(
             database_id=DATABASE_ID,
-            collection_id=PATIENTS_COLLECTION,
-            document_id=patient_id
+            table_id=PATIENTS_COLLECTION,
+            row_id=patient_id
         )
         return response
     except Exception as e:

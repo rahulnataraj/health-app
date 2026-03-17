@@ -1,6 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials, messaging
-from db.appwrite_client import databases, DATABASE_ID
+from db.appwrite_client import tablesDB, DATABASE_ID
 from appwrite.query import Query
 from config import settings
 from utils.logger import logger
@@ -53,10 +53,10 @@ def get_device_tokens_for_patient(patient_id: str) -> list[str]:
     """
     try:
         # 1. Get the patient to find their familyUserId
-        patient = databases.get_document(
+        patient = tablesDB.get_row(
             database_id=DATABASE_ID,
-            collection_id="patients",
-            document_id=patient_id
+            table_id="patients",
+            row_id=patient_id
         )
         family_user_id = patient.get("familyUserId")
         if not family_user_id:
@@ -64,15 +64,15 @@ def get_device_tokens_for_patient(patient_id: str) -> list[str]:
             return []
 
         # 2. Find all registered devices for this user
-        result = databases.list_documents(
+        result = tablesDB.list_rows(
             database_id=DATABASE_ID,
-            collection_id=DEVICES_COLLECTION,
+            table_id=DEVICES_COLLECTION,
             queries=[
                 Query.equal("userId", family_user_id),
                 Query.equal("isActive", True)
             ]
         )
-        tokens = [doc["fcmToken"] for doc in result["documents"] if doc.get("fcmToken")]
+        tokens = [doc["fcmToken"] for doc in result["rows"] if doc.get("fcmToken")]
         logger.info(f"Found {len(tokens)} device(s) for patient {patient_id} (user {family_user_id})")
         return tokens
 
@@ -168,16 +168,16 @@ async def send_push_notification(patient_id: str, title: str, body: str):
 def _deactivate_device_token(token: str):
     """Mark a device token as inactive when it becomes invalid."""
     try:
-        result = databases.list_documents(
+        result = tablesDB.list_rows(
             database_id=DATABASE_ID,
-            collection_id=DEVICES_COLLECTION,
+            table_id=DEVICES_COLLECTION,
             queries=[Query.equal("fcmToken", token)]
         )
-        for doc in result["documents"]:
-            databases.update_document(
+        for doc in result["rows"]:
+            tablesDB.update_row(
                 database_id=DATABASE_ID,
-                collection_id=DEVICES_COLLECTION,
-                document_id=doc["$id"],
+                table_id=DEVICES_COLLECTION,
+                row_id=doc["$id"],
                 data={"isActive": False}
             )
         logger.info(f"Deactivated device with token ...{token[-8:]}")

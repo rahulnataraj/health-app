@@ -1,4 +1,4 @@
-from db.appwrite_client import databases, DATABASE_ID
+from db.appwrite_client import tablesDB, DATABASE_ID
 from appwrite.id import ID
 from appwrite.query import Query
 from models.alert_model import AlertCreate
@@ -20,10 +20,10 @@ def create_alert(alert: AlertCreate):
         if alert.is_read is not None:
             alert_data["isRead"] = alert.is_read
 
-        result = databases.create_document(
+        result = tablesDB.create_row(
             database_id=DATABASE_ID,
-            collection_id=ALERTS_COLLECTION,
-            document_id=ID.unique(),
+            table_id=ALERTS_COLLECTION,
+            row_id=ID.unique(),
             data=alert_data
         )
         logger.info(f"Alert created for patient {alert.patient_id} with severity {alert.severity}")
@@ -34,15 +34,15 @@ def create_alert(alert: AlertCreate):
 
 def get_alerts_for_patient(patient_id: str):
     try:
-        response = databases.list_documents(
+        response = tablesDB.list_rows(
             database_id=DATABASE_ID,
-            collection_id=ALERTS_COLLECTION,
+            table_id=ALERTS_COLLECTION,
             queries=[
                 Query.equal("patientId", patient_id),
                 Query.order_desc("$createdAt")
             ]
         )
-        return response["documents"]
+        return response["rows"]
     except Exception as e:
         logger.error(f"Failed to fetch alerts for {patient_id}: {e}")
         return []
