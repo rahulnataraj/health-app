@@ -57,14 +57,14 @@ class VitalPipeline:
             )
             create_alert(alert_data)
 
-            # 4. If critical, trigger background notification
-            if state == "critical":
-                self.background_tasks.add_task(
-                    send_push_notification,
-                    patient_id=str(vital.patient_id),
-                    title="CRITICAL ALERT",
-                    body=alert_msg
-                )
+            # 4. Trigger background notification
+            title = "CRITICAL ALERT" if state == "critical" else "WARNING ALERT"
+            self.background_tasks.add_task(
+                send_push_notification,
+                patient_id=str(vital.patient_id),
+                title=title,
+                body=alert_msg
+            )
 
         return {"status": "stored", "pulse_state": state}
 

@@ -1,22 +1,31 @@
-import 'package:health_app_mobile/features/auth/models/user_model.dart';
-import 'package:health_app_mobile/features/vitals/models/vital_model.dart';
-
 class PatientModel {
   final String id;
   final String name;
   final int age;
-  final String gender;
-  final String deviceStatus; // 'connected', 'offline'
-  final int batteryLevel;
-  final VitalModel? lastVital;
+  final String doctorId;
+  final String familyUserId;
+  final String? medicalCondition;
+  final String? admissionDate;
 
   PatientModel({
     required this.id,
     required this.name,
     required this.age,
-    required this.gender,
-    required this.deviceStatus,
-    required this.batteryLevel,
-    this.lastVital,
+    required this.doctorId,
+    required this.familyUserId,
+    this.medicalCondition,
+    this.admissionDate,
   });
+
+  factory PatientModel.fromJson(Map<String, dynamic> json) {
+    return PatientModel(
+      id: json['\$id'] as String,
+      name: json['name'] as String,
+      age: json['age'] as int,
+      doctorId: json['doctorId'] as String,
+      familyUserId: json['familyUserId'] as String,
+      medicalCondition: json['medicalCondition'] as String?,
+      admissionDate: json['admissionDate'] as String?,
+    );
+  }
 }

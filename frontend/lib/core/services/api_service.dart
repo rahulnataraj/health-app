@@ -6,8 +6,7 @@ class ApiService {
   final String baseUrl;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  // Temporary mock baseUrl for FastAPI backend
-  ApiService({this.baseUrl = 'http://10.0.2.2:8000'}); // Use 10.0.2.2 for Android emulator to reach localhost
+  ApiService({this.baseUrl = 'https://health-app-o8wh.onrender.com'});
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _storage.read(key: 'jwt_token');
@@ -20,7 +19,10 @@ class ApiService {
   Future<dynamic> get(String endpoint) async {
     try {
       final headers = await _getHeaders();
-      final response = await http.get(Uri.parse('$baseUrl$endpoint'), headers: headers);
+      final response = await http.get(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+      );
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Network error: $e');
@@ -41,17 +43,30 @@ class ApiService {
     }
   }
 
+  Future<dynamic> delete(String endpoint) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
   dynamic _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) return {};
       return jsonDecode(response.body);
     } else {
-       // Extract error message if possible
-       try {
-          final errorData = jsonDecode(response.body);
-          throw Exception(errorData['detail'] ?? 'API Error ${response.statusCode}');
-       } catch(_) {
-          throw Exception('API Error: ${response.statusCode}');
-       }
+      try {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'API Error ${response.statusCode}');
+      } catch (_) {
+        throw Exception('API Error: ${response.statusCode}');
+      }
     }
   }
 }

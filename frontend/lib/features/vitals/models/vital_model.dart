@@ -1,38 +1,42 @@
 class VitalModel {
   final String id;
   final String patientId;
-  final int heartRate;
-  final int systolicPressure;
-  final int diastolicPressure;
-  final double spO2;
-  final DateTime timestamp;
+  final int pulseRate;
+  final String status; // 'normal', 'warning', 'critical'
+  final DateTime? recordedAt;
+  final DateTime createdAt;
 
   VitalModel({
     required this.id,
     required this.patientId,
-    required this.heartRate,
-    required this.systolicPressure,
-    required this.diastolicPressure,
-    required this.spO2,
-    required this.timestamp,
+    required this.pulseRate,
+    required this.status,
+    this.recordedAt,
+    required this.createdAt,
   });
 
   factory VitalModel.fromJson(Map<String, dynamic> json) {
     return VitalModel(
-      id: json['id'] as String,
-      patientId: json['patient_id'] as String,
-      heartRate: json['heart_rate'] as int,
-      systolicPressure: json['systolic_pressure'] as int? ?? 120,
-      diastolicPressure: json['diastolic_pressure'] as int? ?? 80,
-      spO2: (json['sp_o2'] as num?)?.toDouble() ?? 98.0,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      id: json['\$id'] as String,
+      patientId: json['patientId'] as String,
+      pulseRate: json['pulseRate'] as int,
+      status: json['status'] as String? ?? 'normal',
+      recordedAt: json['recordedAt'] != null
+          ? DateTime.tryParse(json['recordedAt'] as String)
+          : null,
+      createdAt: DateTime.parse(json['\$createdAt'] as String),
     );
   }
 
-  // Diagnostic helper based on requested logic
-  String get heartStatus {
-    if (heartRate < 60 || heartRate > 100) return 'critical';
-    if (heartRate < 65 || heartRate > 90) return 'warning';
-    return 'normal';
+  /// Color-coded status for UI
+  String get statusLabel {
+    switch (status) {
+      case 'critical':
+        return 'Critical';
+      case 'warning':
+        return 'Warning';
+      default:
+        return 'Normal';
+    }
   }
 }

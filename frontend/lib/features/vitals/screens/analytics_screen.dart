@@ -1,268 +1,317 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:health_app_mobile/core/theme/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:health_app_mobile/features/auth/providers/auth_provider.dart';
+import 'package:health_app_mobile/features/vitals/providers/vitals_provider.dart';
+import 'package:intl/intl.dart';
 
-class AnalyticsScreen extends StatelessWidget {
+class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-    
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textMain),
-          onPressed: () => context.go('/device-overview'),
-        ),
-        actions: [
-          IconButton(icon: const Icon(Icons.file_copy_outlined, color: AppColors.textMain), onPressed: (){}),
-          IconButton(icon: const Icon(Icons.ios_share_outlined, color: AppColors.textMain), onPressed: (){}),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Diagnostics', style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 24),
-            
-            // Large Chart Card
-            Card(
-              color: AppColors.primaryLight,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final authState = ref.watch(authStateProvider);
+
+    return authState.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
+      data: (user) {
+        if (user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => context.go('/login'));
+          return const SizedBox.shrink();
+        }
+
+        final patientId = user.patientId;
+        final vitalsAsync = patientId != null
+            ? ref.watch(vitalsHistoryProvider(patientId))
+            : const AsyncValue<dynamic>.data(null);
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textMain),
+              onPressed: () => context.go('/device-overview'),
+            ),
+            title: Text('Diagnostics', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            centerTitle: true,
+          ),
+          body: vitalsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Failed to load vitals: $e')),
+            data: (vitals) {
+              if (vitals == null || (vitals is List && vitals.isEmpty)) {
+                return const Center(child: Text('No vitals data available'));
+              }
+
+              final vitalList = vitals as List;
+              // Reverse to get chronological order for chart
+              final chronological = vitalList.reversed.toList();
+              final latest = vitalList.first;
+
+              // Build chart spots
+              final spots = <FlSpot>[];
+              for (int i = 0; i < chronological.length; i++) {
+                spots.add(FlSpot(i.toDouble(), chronological[i].pulseRate.toDouble()));
+              }
+
+              // Calculate stats
+              final pulseValues = chronological.map((v) => v.pulseRate).toList();
+              final avgPulse = pulseValues.reduce((a, b) => a + b) / pulseValues.length;
+              final maxPulse = pulseValues.reduce((a, b) => a > b ? a : b);
+              final minPulse = pulseValues.reduce((a, b) => a < b ? a : b);
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
+                    // Chart Card
+                    Card(
+                      color: AppColors.primaryLight,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.monitor_heart_rounded, color: AppColors.textMain, size: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.monitor_heart_rounded, color: AppColors.textMain, size: 20),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text('Heartbeat', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                Text('${vitalList.length} readings', style: theme.textTheme.bodySmall),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Text('Heartbeat', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 24),
+
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '${latest.pulseRate}',
+                                  style: theme.textTheme.displayMedium?.copyWith(
+                                    color: AppColors.textMain,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('bpm', style: theme.textTheme.titleMedium),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: latest.status == 'critical'
+                                        ? AppColors.criticalLight
+                                        : latest.status == 'warning'
+                                            ? AppColors.warningLight
+                                            : AppColors.successLight,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    latest.statusLabel,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: latest.status == 'critical'
+                                          ? AppColors.critical
+                                          : latest.status == 'warning'
+                                              ? AppColors.warning
+                                              : AppColors.success,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Real Line Chart
+                            SizedBox(
+                              height: 150,
+                              child: LineChart(
+                                LineChartData(
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    horizontalInterval: 20,
+                                    getDrawingHorizontalLine: (value) => FlLine(
+                                      color: Colors.white.withOpacity(0.3),
+                                      strokeWidth: 1,
+                                    ),
+                                  ),
+                                  titlesData: FlTitlesData(
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 32,
+                                        getTitlesWidget: (value, meta) {
+                                          return Text(
+                                            '${value.toInt()}',
+                                            style: const TextStyle(fontSize: 10, color: AppColors.textLight),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  minY: (minPulse - 10).toDouble(),
+                                  maxY: (maxPulse + 10).toDouble(),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: spots,
+                                      isCurved: true,
+                                      color: AppColors.primary,
+                                      barWidth: 3,
+                                      isStrokeCapRound: true,
+                                      dotData: FlDotData(
+                                        show: true,
+                                        getDotPainter: (spot, percent, barData, index) {
+                                          final vital = chronological[index];
+                                          final dotColor = vital.status == 'critical'
+                                              ? AppColors.critical
+                                              : vital.status == 'warning'
+                                                  ? AppColors.warning
+                                                  : AppColors.primary;
+                                          return FlDotCirclePainter(
+                                            radius: 3,
+                                            color: dotColor,
+                                            strokeWidth: 1,
+                                            strokeColor: Colors.white,
+                                          );
+                                        },
+                                      ),
+                                      belowBarData: BarAreaData(
+                                        show: true,
+                                        color: AppColors.primary.withOpacity(0.1),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                        const Icon(Icons.more_horiz, color: AppColors.textMain),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 24),
-                    
+
+                    const SizedBox(height: 16),
+
+                    // Stats Row
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
                       children: [
-                        Text('82', style: theme.textTheme.displayMedium?.copyWith(color: AppColors.textMain, fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 8),
-                        Text('bpm', style: theme.textTheme.titleMedium),
+                        Expanded(
+                          child: _buildStatCard(theme, 'Average', '${avgPulse.toStringAsFixed(0)} bpm', AppColors.primaryLight),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(theme, 'Max', '$maxPulse bpm', AppColors.warningLight),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(theme, 'Min', '$minPulse bpm', AppColors.successLight),
+                        ),
                       ],
                     ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Simple simulated Line Chart
-                    SizedBox(
-                      height: 100,
-                      child: LineChart(
-                        LineChartData(
-                          gridData: FlGridData(show: false),
-                          titlesData: FlTitlesData(show: false),
-                          borderData: FlBorderData(show: false),
-                          minX: 0,
-                          maxX: 8,
-                          minY: 0,
-                          maxY: 6,
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: const [
-                                FlSpot(0, 3),
-                                FlSpot(1, 3),
-                                FlSpot(1.5, 4),
-                                FlSpot(2, 2),
-                                FlSpot(2.5, 3),
-                                FlSpot(4, 3),
-                                FlSpot(4.5, 5),
-                                FlSpot(5, 1),
-                                FlSpot(5.5, 3),
-                                FlSpot(8, 3),
-                              ],
-                              isCurved: true,
-                              color: AppColors.textMain,
-                              barWidth: 2,
-                              isStrokeCapRound: true,
-                              dotData: FlDotData(show: false),
-                              belowBarData: BarAreaData(show: false),
-                            ),
+
+                    const SizedBox(height: 16),
+
+                    // Recent readings list
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Recent Readings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 16),
+                            ...vitalList.take(10).map((vital) {
+                              final statusColor = vital.status == 'critical'
+                                  ? AppColors.critical
+                                  : vital.status == 'warning'
+                                      ? AppColors.warning
+                                      : AppColors.success;
+
+                              final timeStr = DateFormat('MMM d, HH:mm').format(vital.createdAt);
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: statusColor,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      '${vital.pulseRate} bpm',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textMain,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      vital.statusLabel,
+                                      style: TextStyle(fontSize: 12, color: statusColor, fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(timeStr, style: theme.textTheme.bodySmall),
+                                  ],
+                                ),
+                              );
+                            }),
                           ],
-                        )
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Secondary Metric Card
-            Card(
-              color: AppColors.successLight,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.multiline_chart, color: AppColors.success, size: 16),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('851 ms', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                                Text('R-R interval', style: theme.textTheme.bodySmall),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const Icon(Icons.more_horiz, color: AppColors.textMain),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    // Timeline mockup
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildTimelineItem('851 ms'),
-                         _buildTimelineItem('841 ms'),
-                          _buildTimelineItem('871 ms'),
-                           _buildTimelineItem('881 ms'),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Summary Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Row(
-                  children: [
-                     // Circular progress visualization mockup
-                     Container(
-                       width: 80,
-                       height: 80,
-                       decoration: BoxDecoration(
-                         shape: BoxShape.circle,
-                         border: Border.all(color: AppColors.primaryLight, width: 8),
-                       ),
-                       child: Center(
-                         child: Container(
-                           width: 40,
-                           height: 40,
-                           decoration: const BoxDecoration(
-                            color: AppColors.primaryLight,
-                            shape: BoxShape.circle
-                           ),
-                         ),
-                       ),
-                     ),
-                     const SizedBox(width: 24),
-                     
-                     Expanded(
-                       child: Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           Text('Results', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                           const SizedBox(height: 4),
-                           Text('You are calm and ready!', style: theme.textTheme.bodySmall),
-                           const SizedBox(height: 12),
-                           Row(
-                             children: [
-                               Container(
-                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                 decoration: BoxDecoration(
-                                   color: AppColors.highlightLight,
-                                   borderRadius: BorderRadius.circular(8),
-                                 ),
-                                 child: const Row(
-                                   children: [
-                                     CircleAvatar(radius: 3, backgroundColor: AppColors.highlight),
-                                     SizedBox(width: 4),
-                                     Text('Stress', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                   ],
-                                 ),
-                               ),
-                               const SizedBox(width: 8),
-                               Container(
-                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                 decoration: BoxDecoration(
-                                   color: AppColors.primaryLight,
-                                   borderRadius: BorderRadius.circular(8),
-                                 ),
-                                 child: const Row(
-                                   children: [
-                                     CircleAvatar(radius: 3, backgroundColor: AppColors.primary),
-                                     SizedBox(width: 4),
-                                     Text('Recovery', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                   ],
-                                 ),
-                               ),
-                             ],
-                           )
-                         ],
-                       ),
-                     )
-                  ],
-                ),
-              ),
-            )
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(ThemeData theme, String label, String value, Color bgColor) {
+    return Card(
+      color: bgColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(label, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           ],
         ),
       ),
-    );
-  }
-  
-  Widget _buildTimelineItem(String label) {
-    return Column(
-      children: [
-        Container(
-          height: 2,
-          width: 40,
-          color: Colors.white,
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-      ],
     );
   }
 }

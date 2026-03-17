@@ -1,0 +1,27 @@
+﻿Analyzing frontend...                                           
+
+warning - Unused import: 'package:flutter_riverpod/flutter_riverpod.dart' - lib\core\router\app_router.dart:2:8 - unused_import
+warning - Unused import: 'package:health_app_mobile/features/auth/providers/auth_provider.dart' - lib\core\router\app_router.dart:5:8 - unused_import
+   info - 'background' is deprecated and shouldn't be used. Use surface instead. This feature was deprecated after v3.18.0-0.1.pre - lib\core\theme\app_theme.dart:37:9 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\theme\app_theme.dart:56:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\alerts\screens\alerts_screen.dart:61:91 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\alerts\screens\alerts_screen.dart:116:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\alerts\screens\alerts_screen.dart:131:64 - deprecated_member_use
+warning - The value of the local variable 'user' isn't used - lib\features\auth\providers\auth_provider.dart:52:13 - unused_local_variable
+   info - Use 'const' with the constructor to improve performance - lib\features\patients\screens\device_overview_screen.dart:106:42 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patients\screens\device_overview_screen.dart:154:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patients\screens\device_overview_screen.dart:225:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\patients\screens\device_overview_screen.dart:280:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\vitals\screens\analytics_screen.dart:156:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\vitals\screens\analytics_screen.dart:206:66 - deprecated_member_use
+   info - Use 'const' with the constructor to improve performance - lib\features\vitals\screens\monitoring_dashboard_screen.dart:82:36 - prefer_const_constructors
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\vitals\screens\monitoring_dashboard_screen.dart:136:67 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\vitals\screens\monitoring_dashboard_screen.dart:163:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\shared_widgets\custom_bottom_nav.dart:25:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\shared_widgets\custom_bottom_nav.dart:58:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\shared_widgets\device_status_badge.dart:40:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\shared_widgets\device_status_badge.dart:42:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\shared_widgets\device_status_badge.dart:59:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\shared_widgets\metric_card.dart:35:34 - deprecated_member_use
+  error - The name 'MyApp' isn't a class - test\widget_test.dart:16:35 - creation_with_non_type
+
